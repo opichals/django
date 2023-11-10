@@ -315,6 +315,10 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
 # before a SuspiciousOperation (TooManyFilesSent) is raised.
 DATA_UPLOAD_MAX_NUMBER_FILES = 100
 
+# Maximum size, in bytes, of the http header fields in a single multipart chunk
+# allowed before a MultiPartParserError is raised.
+DATA_UPLOAD_MAX_TOTAL_HEADER_SIZE = 1024
+
 # Directory in which upload streamed files will be temporarily saved. A value of
 # `None` will make Django use the operating system's default temporary directory
 # (i.e. "/tmp" on *nix systems).

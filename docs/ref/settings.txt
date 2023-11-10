@@ -1082,6 +1082,19 @@ denial-of-service attack vector if left unchecked. Since web servers don't
 typically perform deep request inspection, it's not possible to perform a
 similar check at that level.
 
+.. setting:: DATA_UPLOAD_MAX_TOTAL_HEADER_SIZE
+
+``DATA_UPLOAD_MAX_TOTAL_HEADER_SIZE``
+-------------------------------------
+
+Default: ``1024``
+
+The maximum size, in bytes, of the http header fields in a single multipart chunk
+allowed before a ``django.http.multipartparser.MultiPartParserError`` is raised.
+
+.. versionadded:: 4.2.8
+
+
 .. setting:: DATABASE_ROUTERS
 
 ``DATABASE_ROUTERS``

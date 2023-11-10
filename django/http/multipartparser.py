@@ -678,17 +678,19 @@ def exhaust(stream_or_iterable):
     collections.deque(iterator, maxlen=0)  # consume iterator quickly.
 
 
-def parse_boundary_stream(stream, max_header_size):
+def parse_boundary_stream(stream):
     """
     Parse one and exactly one stream that encapsulates a boundary.
     """
-
     # Start with checking for the end of headers in the first kilobyte and if not found
-    # extend the search to the limit of max_header_size.
-    headers_chunk_size = 1024
+    # extend the search to the settings.DATA_UPLOAD_MAX_TOTAL_HEADER_SIZE limit
+    headers_chunk_size = min(1024, settings.DATA_UPLOAD_MAX_TOTAL_HEADER_SIZE)
     while True:
-        if headers_chunk_size > max_header_size:
-            raise MultiPartParserError("Header Fields Too Large (max=%s)" % max_header_size)
+        if headers_chunk_size > settings.DATA_UPLOAD_MAX_TOTAL_HEADER_SIZE:
+            raise MultiPartParserError(
+                "Request total header size exceeded "
+                "settings.DATA_UPLOAD_MAX_TOTAL_HEADER_SIZE."
+            )
 
         # Stream at beginning of header, look for end of header
         # and parse it if found. The header must fit within one
@@ -710,8 +712,8 @@ def parse_boundary_stream(stream, max_header_size):
         if len(chunk) < headers_chunk_size:
             return (RAW, {}, stream)
 
-        # extend by 1k
-        headers_chunk_size += 1024
+        # double the size
+        headers_chunk_size *= 2
 
     header = chunk[:header_end]
 
@@ -755,4 +757,4 @@ class Parser:
         boundarystream = InterBoundaryIter(self._stream, self._separator)
         for sub_stream in boundarystream:
             # Iterate over each part
-            yield parse_boundary_stream(sub_stream, 8192)
+            yield parse_boundary_stream(sub_stream)

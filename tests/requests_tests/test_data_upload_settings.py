@@ -6,8 +6,9 @@ from django.core.exceptions import (
     TooManyFilesSent,
 )
 from django.core.handlers.wsgi import WSGIRequest
+from django.http.multipartparser import MultiPartParserError
 from django.test import SimpleTestCase
-from django.test.client import FakePayload
+from django.test.client import BOUNDARY, MULTIPART_CONTENT, FakePayload
 
 TOO_MANY_FIELDS_MSG = (
     "The number of GET/POST parameters exceeded settings.DATA_UPLOAD_MAX_NUMBER_FIELDS."
@@ -16,6 +17,9 @@ TOO_MANY_FILES_MSG = (
     "The number of files exceeded settings.DATA_UPLOAD_MAX_NUMBER_FILES."
 )
 TOO_MUCH_DATA_MSG = "Request body exceeded settings.DATA_UPLOAD_MAX_MEMORY_SIZE."
+TOO_LARGE_HEADERS_MSG = (
+    "Request total header size exceeded settings.DATA_UPLOAD_MAX_TOTAL_HEADER_SIZE."
+)
 
 
 class DataUploadMaxMemorySizeFormPostTests(SimpleTestCase):
@@ -267,4 +271,39 @@ class DataUploadMaxNumberOfFieldsFormPost(SimpleTestCase):
 
     def test_no_limit(self):
         with self.settings(DATA_UPLOAD_MAX_NUMBER_FIELDS=None):
+            self.request._load_post_and_files()
+
+
+class DataUploadMaxTotalHeaderSizeFormPost(SimpleTestCase):
+    def setUp(self):
+        payload = FakePayload(
+            "\r\n".join(
+                [
+                    "--" + BOUNDARY,
+                    'Content-Disposition: form-data; name="my_file"; '
+                    'filename="test.txt"',
+                    "Content-Type: text/plain",
+                    "X-Long-Header: %s" % ("-" * 2500),
+                    "",
+                    "file contents.",
+                    "--" + BOUNDARY + "--\r\n",
+                ]
+            )
+        )
+        self.request = WSGIRequest(
+            {
+                "REQUEST_METHOD": "POST",
+                "CONTENT_TYPE": MULTIPART_CONTENT,
+                "CONTENT_LENGTH": len(payload),
+                "wsgi.input": payload,
+            }
+        )
+
+    def test_number_exceeded(self):
+        with self.settings(DATA_UPLOAD_MAX_TOTAL_HEADER_SIZE=1024):
+            with self.assertRaisesMessage(MultiPartParserError, TOO_LARGE_HEADERS_MSG):
+                self.request._load_post_and_files()
+
+    def test_number_not_exceeded(self):
+        with self.settings(DATA_UPLOAD_MAX_TOTAL_HEADER_SIZE=4096):
             self.request._load_post_and_files()

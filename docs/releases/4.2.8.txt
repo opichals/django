@@ -11,3 +11,5 @@ Bugfixes
 
 * Fixed a regression in Django 4.2 that caused :option:`makemigrations --check`
   to stop displaying pending migrations (:ticket:`34457`).
+* Fixed silent ``MultiPartParser`` failures for when the chunks' headers are longer
+  than 1024. Made configurable via settings.DATA_UPLOAD_MAX_TOTAL_HEADER_SIZE.

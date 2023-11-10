@@ -608,8 +608,11 @@ class FileUploadTests(TestCase):
             "\r\n".join(
                 [
                     "--" + client.BOUNDARY,
-                    'Content-Disposition: form-data; name="my_file"; filename="test.txt"',
+                    'Content-Disposition: form-data; name="my_file"; '
+                    'filename="test.txt"',
                     "Content-Type: text/plain",
+                    # make the header exceed the
+                    # settings.DATA_UPLOAD_MAX_TOTAL_HEADER_SIZE=1024 default
                     "X-Long-Header: %s" % ("-" * 1500),
                     "",
                     "file contents.",
